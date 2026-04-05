@@ -33,6 +33,10 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Para cualquier navegación SPA, el SW sirve index.html desde caché
+        // Excluye /api/ y /uploads/ para que pasen a la red
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/') || url.href.includes('/api/'),
