@@ -16,6 +16,18 @@
   status = 200
   force  = true
 
+# Headers para archivos PWA
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "no-cache"
+
 # SPA fallback — debe ir al final
 [[redirects]]
   from   = "/*"
