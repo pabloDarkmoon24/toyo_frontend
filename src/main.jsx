@@ -16,6 +16,16 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
+
+  // Si el SW está en estado de error (fetch fallando), lo desregistra
+  // para que la próxima carga sea limpia
+  navigator.serviceWorker.ready.then(reg => {
+    reg.active?.postMessage({ type: 'PING' });
+  }).catch(() => {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+  });
 }
 
 // Registra el SW. onRegisteredSW nos da la referencia para forzar checks.
