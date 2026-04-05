@@ -35,12 +35,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^\/api\//,
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/') || url.href.includes('/api/'),
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', networkTimeoutSeconds: 10 },
           },
           {
-            urlPattern: /^\/uploads\//,
+            urlPattern: ({ url }) => url.pathname.startsWith('/uploads/') || url.href.includes('/uploads/'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'uploads-cache',
