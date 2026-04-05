@@ -4,17 +4,32 @@
   publish   = "dist"
 
 # Proxy: /api/* y /uploads/* van al backend en Railway (sin CORS)
+# X-Proxy-Secret: Railway verifica este header — peticiones sin él son rechazadas
 [[redirects]]
   from   = "/api/*"
   to     = "https://toyo-production.up.railway.app/api/:splat"
   status = 200
   force  = true
+  [redirects.headers]
+    X-Proxy-Secret = "Tx9f2Kp7vQ4nB8wLj5mF"
 
 [[redirects]]
   from   = "/uploads/*"
   to     = "https://toyo-production.up.railway.app/uploads/:splat"
   status = 200
   force  = true
+  [redirects.headers]
+    X-Proxy-Secret = "Tx9f2Kp7vQ4nB8wLj5mF"
+
+# Headers de seguridad para todas las páginas HTML
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 # Headers para archivos PWA
 [[headers]]
