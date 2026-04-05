@@ -154,6 +154,11 @@ export const usuarios = {
   eliminar: (id) => api.delete(`/usuarios/${id}`),
 };
 
+export const backup = {
+  descargar: () => api.get('/backup/descargar', { responseType: 'blob' }),
+  ejecutarDrive: () => api.post('/backup/ejecutar-drive'),
+};
+
 export const plantillasPermisos = {
   listar: () => api.get('/usuarios/plantillas'),
   crear: (data) => api.post('/usuarios/plantillas', data),

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { configuracion as apiConfig, auth, productos as apiProductos, gastosFijos as apiFijos, metodosPago as apiMetodos } from '../api';
-import { Settings, KeyRound, Package, Building2, CheckCircle2, AlertTriangle, Target, Plus, Trash2, Pencil, X, CreditCard, Smartphone, RefreshCw } from 'lucide-react';
+import { configuracion as apiConfig, auth, productos as apiProductos, gastosFijos as apiFijos, metodosPago as apiMetodos, backup as apiBackup } from '../api';
+import { Settings, KeyRound, Package, Building2, CheckCircle2, AlertTriangle, Target, Plus, Trash2, Pencil, X, CreditCard, Smartphone, RefreshCw, Database, Download, Cloud } from 'lucide-react';
 import { SectionHeader, Btn, Input, PageLoader } from '../components/UI';
 import { confirmar } from '../utils/confirmar';
 import { toast } from '../utils/toast';
@@ -109,6 +109,38 @@ export default function Configuracion() {
   const [stockMinGlobal, setStockMinGlobal] = useState('5');
   const [guardandoStock, setGuardandoStock] = useState(false);
   const [alertaStock, setAlertaStock] = useState(null);
+
+  // Backup
+  const [backupDriveStatus, setBackupDriveStatus] = useState(null); // null | 'loading' | 'ok' | 'error'
+  const [backupDriveMsg, setBackupDriveMsg] = useState('');
+  const [descargandoBackup, setDescargandoBackup] = useState(false);
+
+  const ejecutarBackupDrive = async () => {
+    setBackupDriveStatus('loading');
+    setBackupDriveMsg('');
+    try {
+      const r = await apiBackup.ejecutarDrive();
+      setBackupDriveStatus('ok');
+      setBackupDriveMsg(r.data.mensaje || 'Backup enviado a Google Drive.');
+    } catch (e) {
+      setBackupDriveStatus('error');
+      setBackupDriveMsg(e.response?.data?.error || 'Error al ejecutar el backup.');
+    }
+  };
+
+  const descargarBackup = async () => {
+    setDescargandoBackup(true);
+    try {
+      const r = await apiBackup.descargar();
+      const url = URL.createObjectURL(new Blob([r.data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `toyo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error('Error al descargar el backup'); }
+    finally { setDescargandoBackup(false); }
+  };
 
   // Cambio contraseña
   const [pass, setPass] = useState({ actual: '', nueva: '', confirmar: '' });
@@ -675,6 +707,52 @@ export default function Configuracion() {
                 </Btn>
               )}
             </div>
+          </div>
+        </SeccionCard>
+
+        {/* Respaldos */}
+        <SeccionCard icon={Database} titulo="Respaldos" descripcion="Backup automático diario a Google Drive a las 2:00 AM">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            <div style={{
+              padding: '11px 14px', borderRadius: 8,
+              background: 'var(--color-gris-50)', border: '1px solid var(--color-gris-200)',
+              fontSize: '0.8rem', color: 'var(--color-gris-600)', lineHeight: 1.6,
+            }}>
+              El sistema guarda automáticamente la base de datos y las imágenes en Google Drive todos los días a las <strong>2:00 AM</strong>.
+              Los backups se conservan por <strong>30 días</strong> y luego se eliminan automáticamente.
+            </div>
+
+            {backupDriveStatus === 'ok' && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8,
+                background: 'rgba(5,150,105,.08)', border: '1px solid rgba(5,150,105,.25)',
+                color: '#065f46', fontSize: '0.8125rem', fontWeight: 500,
+              }}>
+                <CheckCircle2 size={14} /> {backupDriveMsg}
+              </div>
+            )}
+            {backupDriveStatus === 'error' && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8,
+                background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.25)',
+                color: '#991b1b', fontSize: '0.8125rem', fontWeight: 500,
+              }}>
+                <AlertTriangle size={14} /> {backupDriveMsg}
+              </div>
+            )}
+
+            <Btn
+              icon={Cloud}
+              onClick={ejecutarBackupDrive}
+              disabled={backupDriveStatus === 'loading'}
+            >
+              {backupDriveStatus === 'loading' ? 'Enviando a Drive...' : 'Ejecutar backup ahora'}
+            </Btn>
+
+            <Btn icon={Download} variant="secondary" onClick={descargarBackup} disabled={descargandoBackup}>
+              {descargandoBackup ? 'Descargando...' : 'Descargar backup local (JSON)'}
+            </Btn>
           </div>
         </SeccionCard>
 
