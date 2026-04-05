@@ -214,7 +214,7 @@ export default function Ordenes() {
   const [detalle, setDetalle] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [clienteSeleccion, setClienteSeleccion] = useState(null);
-  const [vehiculoForm, setVehiculoForm] = useState({ marca: 'Toyota', modelo: '', placa: '', color: '' });
+  const [vehiculoForm, setVehiculoForm] = useState({ marca: 'Toyota', modelo: '', anio: '', placa: '', color: '' });
   const [trabajoForm, setTrabajoForm] = useState({ descripcion: '', observaciones: '' });
 
   // Notas
@@ -294,6 +294,7 @@ export default function Ordenes() {
       const vR = await clientesApi.agregarVehiculo(clienteId, {
         marca: vehiculoForm.marca || 'Toyota',
         modelo: vehiculoForm.modelo || 'No especificado',
+        anio: vehiculoForm.anio ? Number(vehiculoForm.anio) : undefined,
         placa: vehiculoForm.placa || undefined,
         color: vehiculoForm.color || undefined,
       });
@@ -394,6 +395,7 @@ export default function Ordenes() {
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Marca" value={vehiculoForm.marca} onChange={e => setVehiculoForm(p => ({ ...p, marca: e.target.value }))} placeholder="Toyota" />
                 <Input label="Modelo" value={vehiculoForm.modelo} onChange={e => setVehiculoForm(p => ({ ...p, modelo: e.target.value }))} placeholder="Hilux, Corolla..." />
+                <Input label="Año" type="number" value={vehiculoForm.anio} onChange={e => setVehiculoForm(p => ({ ...p, anio: e.target.value }))} placeholder="2020" />
                 <Input label="Placa" value={vehiculoForm.placa} onChange={e => setVehiculoForm(p => ({ ...p, placa: e.target.value }))} placeholder="AB123XY" />
                 <Input label="Color" value={vehiculoForm.color} onChange={e => setVehiculoForm(p => ({ ...p, color: e.target.value }))} placeholder="Blanco, Negro..." />
               </div>

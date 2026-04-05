@@ -750,9 +750,6 @@ export default function Configuracion() {
               {backupDriveStatus === 'loading' ? 'Enviando a Drive...' : 'Ejecutar backup ahora'}
             </Btn>
 
-            <Btn icon={Download} variant="secondary" onClick={descargarBackup} disabled={descargandoBackup}>
-              {descargandoBackup ? 'Descargando...' : 'Descargar backup local (JSON)'}
-            </Btn>
           </div>
         </SeccionCard>
 
