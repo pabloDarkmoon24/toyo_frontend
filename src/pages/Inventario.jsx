@@ -14,6 +14,7 @@ const CATEGORIAS_DEFAULT = ['rines', 'llantas', 'accesorios', 'rines restaurados
 const productoVacio = {
   nombre: '', categoria: 'repuestos', descripcion: '',
   precio: '', costo: '', stock: '', stockMinimo: '5', unidad: 'unidad', imagenUrl: '',
+  condicion: 'nuevo',
 };
 
 const categoriaColors = {
@@ -933,7 +934,7 @@ export default function Inventario() {
         ) : (
           <Table headers={[
             ...(esAdmin ? [{ label: <input type="checkbox" checked={seleccionados.size > 0} onChange={toggleTodos} title={seleccionados.size > 0 ? 'Deseleccionar todo' : `Seleccionar primeros ${MAX_SELECCION}`} style={{ cursor: 'pointer', width: 15, height: 15 }} />, align: 'center' }] : []),
-            'Producto', 'Categoría', { label: 'Precio', align: 'right' }, { label: 'Costo', align: 'right' }, { label: 'Stock', align: 'center' }, { label: 'Acciones', align: 'center' }
+            'Producto', 'Categoría', { label: 'Condición', align: 'center' }, { label: 'Precio', align: 'right' }, { label: 'Costo', align: 'right' }, { label: 'Stock', align: 'center' }, { label: 'Acciones', align: 'center' }
           ]}>
             {lista.map(p => (
               <tr key={p.id} style={{ background: seleccionados.has(p.id) ? 'rgba(220,38,38,.04)' : undefined }}>
@@ -959,6 +960,17 @@ export default function Inventario() {
                   </div>
                 </Td>
                 <Td><Badge variant={categoriaColors[p.categoria] || 'default'}>{p.categoria}</Badge></Td>
+                <Td align="center">
+                  <span style={{
+                    display: 'inline-block', padding: '3px 10px', borderRadius: 99,
+                    fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.3px',
+                    background: p.condicion === 'usado' ? 'rgba(217,119,6,.12)' : 'rgba(5,150,105,.1)',
+                    color: p.condicion === 'usado' ? '#b45309' : '#047857',
+                    border: `1px solid ${p.condicion === 'usado' ? 'rgba(217,119,6,.3)' : 'rgba(5,150,105,.25)'}`,
+                  }}>
+                    {p.condicion === 'usado' ? 'Usado' : 'Nuevo'}
+                  </span>
+                </Td>
                 <Td align="right"><span style={{ fontWeight: 600, color: 'var(--color-gris-800)' }}>{fmt(p.precio)}</span></Td>
                 <Td align="right"><span style={{ color: 'var(--color-gris-500)' }}>{p.costo ? fmt(p.costo) : '—'}</span></Td>
                 <Td align="center">
@@ -1000,6 +1012,14 @@ export default function Inventario() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-gris-900)' }}>{p.nombre}</span>
                     <Badge variant={categoriaColors[p.categoria] || 'default'}>{p.categoria}</Badge>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 99,
+                      fontSize: '0.68rem', fontWeight: 700,
+                      background: p.condicion === 'usado' ? 'rgba(217,119,6,.12)' : 'rgba(5,150,105,.1)',
+                      color: p.condicion === 'usado' ? '#b45309' : '#047857',
+                    }}>
+                      {p.condicion === 'usado' ? 'Usado' : 'Nuevo'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-gris-800)' }}>{fmt(p.precio)}</span>
@@ -1057,6 +1077,10 @@ export default function Inventario() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
               <Select label="Categoría" value={form.categoria} onChange={e => f('categoria', e.target.value)}>
                 {CATEGORIAS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+              </Select>
+              <Select label="Condición del producto" value={form.condicion || 'nuevo'} onChange={e => f('condicion', e.target.value)}>
+                <option value="nuevo">Nuevo</option>
+                <option value="usado">Usado / Segunda</option>
               </Select>
               <Input label="Unidad de medida" value={form.unidad} onChange={e => f('unidad', e.target.value)} placeholder="unidad, litro, kg..." />
               <Input label="Precio de venta *" type="number" value={form.precio} onChange={e => f('precio', e.target.value)} placeholder="0.00" />
