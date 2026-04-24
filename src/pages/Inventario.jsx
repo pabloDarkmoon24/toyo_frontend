@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import writeXlsxFile from 'write-excel-file/browser';
 import readXlsxFile from 'read-excel-file/browser';
 import { productos as api } from '../api';
-import { Plus, Search, Package, AlertTriangle, Pencil, Trash2, ArrowUpDown, Filter, Download, Tag, Upload, FileSpreadsheet, FolderCog } from 'lucide-react';
+import { Plus, Search, Package, AlertTriangle, Pencil, Trash2, ArrowUpDown, Filter, Download, Tag, Upload, FileSpreadsheet, FolderCog, Clock } from 'lucide-react';
 import { Modal, ModalFooter, Btn, Input, Select, Textarea, Badge, PageLoader, EmptyState, SectionHeader, Table, Td, ActionMenu, IconBtn } from '../components/UI';
 import { toast } from '../utils/toast';
 import { confirmar } from '../utils/confirmar';
@@ -32,13 +32,13 @@ const categoriaColors = {
 // ── Plantilla Excel ──────────────────────────────────────────────────────────
 async function descargarPlantilla() {
   const data = [
-    ['Nombre','Categoría','Precio de Venta','Precio de Compra (Costo)','Stock Inicial','Stock Mínimo','Unidad','Descripción']
+    ['Nombre','Categoría','Precio de Venta','Precio de Compra (Costo)','Stock Inicial','Stock Mínimo','Unidad','Condición','Descripción']
       .map(h => ({ value: h, fontWeight: 'bold' })),
-    [{ value: 'EJEMPLO: Llanta Pirelli 205/55R16' },{ value: 'llantas' },{ value: 150, type: Number },{ value: 110, type: Number },{ value: 4, type: Number },{ value: 1, type: Number },{ value: 'unidad' },{ value: 'Descripción opcional' }],
-    [{ value: 'EJEMPLO: Rin Vossen 17 Negro' },{ value: 'rines' },{ value: 85, type: Number },{ value: 60, type: Number },{ value: 8, type: Number },{ value: 1, type: Number },{ value: 'unidad' },{ value: '' }],
+    [{ value: 'EJEMPLO: Llanta Pirelli 205/55R16' },{ value: 'llantas' },{ value: 150, type: Number },{ value: 110, type: Number },{ value: 4, type: Number },{ value: 1, type: Number },{ value: 'unidad' },{ value: 'nuevo' },{ value: 'Descripción opcional' }],
+    [{ value: 'EJEMPLO: Rin Vossen 17 Negro' },{ value: 'rines' },{ value: 85, type: Number },{ value: 60, type: Number },{ value: 8, type: Number },{ value: 1, type: Number },{ value: 'unidad' },{ value: 'usado' },{ value: '' }],
   ];
   await writeXlsxFile(data, {
-    columns: [{ width: 40 },{ width: 20 },{ width: 18 },{ width: 24 },{ width: 14 },{ width: 14 },{ width: 10 },{ width: 30 }],
+    columns: [{ width: 40 },{ width: 20 },{ width: 18 },{ width: 24 },{ width: 14 },{ width: 14 },{ width: 10 },{ width: 12 },{ width: 30 }],
     fileName: 'plantilla_productos_toyo.xlsx',
     sheet: 'Productos',
   });
@@ -88,7 +88,8 @@ async function leerExcelProductos(file) {
       stock:       Number(r[4]) || 0,
       stockMinimo: Number(r[5]) || 1,
       unidad:      String(r[6] || 'unidad').trim(),
-      descripcion: String(r[7] || '').trim() || null,
+      condicion:   ['nuevo','usado'].includes(String(r[7] || '').toLowerCase().trim()) ? String(r[7]).toLowerCase().trim() : 'nuevo',
+      descripcion: String(r[8] || '').trim() || null,
     }))
     .filter(p => p.nombre.length >= 2);
   return generarCodigos(productos);
@@ -219,7 +220,7 @@ function ModalImportar({ onClose, onImportado }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                   <thead>
                     <tr style={{ background: 'var(--color-gris-50)', position: 'sticky', top: 0 }}>
-                      {['#', 'Código', 'Nombre', 'Categoría', 'P. Venta', 'Stock'].map(h => (
+                      {['#', 'Código', 'Nombre', 'Categoría', 'Condición', 'P. Venta', 'Stock'].map(h => (
                         <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--color-gris-600)', borderBottom: '1px solid var(--color-gris-200)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -235,6 +236,15 @@ function ModalImportar({ onClose, onImportado }) {
                         </td>
                         <td style={{ padding: '7px 10px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{p.nombre}</td>
                         <td style={{ padding: '7px 10px', color: 'var(--color-gris-500)', whiteSpace: 'nowrap' }}>{p.categoria}</td>
+                        <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700,
+                            background: p.condicion === 'usado' ? 'rgba(217,119,6,.12)' : 'rgba(5,150,105,.1)',
+                            color: p.condicion === 'usado' ? '#b45309' : '#047857',
+                          }}>
+                            {p.condicion === 'usado' ? 'Usado' : 'Nuevo'}
+                          </span>
+                        </td>
                         <td style={{ padding: '7px 10px', color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' }}>${p.precio}</td>
                         <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>{p.stock}</td>
                       </tr>
@@ -444,7 +454,7 @@ ${etiquetas.map(p => `
 }
 
 // ── Modal Stickers ───────────────────────────────────────────────────────────
-function ModalStickers({ lista, onClose }) {
+function ModalStickers({ lista, categorias, onClose }) {
   const [buscar, setBuscar] = useState('');
   const [catFiltro, setCatFiltro] = useState('');
   const [seleccion, setSeleccion] = useState({});
@@ -498,7 +508,7 @@ function ModalStickers({ lista, onClose }) {
           style={{ fontSize: '0.8125rem', minWidth: 160 }}
         >
           <option value="">Todas las categorías</option>
-          {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+          {(categorias || []).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <Btn variant="secondary" onClick={usarStock} style={{ fontSize: '0.75rem', padding: '7px 14px' }}>
           Usar stock actual
@@ -712,6 +722,7 @@ export default function Inventario() {
   const [buscarInput, setBuscarInput] = useState('');
   const [buscar, setBuscar] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
+  const [ordenFiltro, setOrdenFiltro] = useState('');
   const reqIdRef = useRef(0);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(productoVacio);
@@ -728,12 +739,25 @@ export default function Inventario() {
     return () => clearTimeout(t);
   }, [buscarInput]);
 
-  const cargar = () => {
+  // Función estable para recargar categorías (usada al montar y tras renombrar)
+  const refreshCategorias = useCallback(() => {
+    api.categorias().then(r => {
+      const cats = r.data || [];
+      const merged = [...new Set([...CATEGORIAS_DEFAULT, ...cats])];
+      setCategorias(merged);
+    }).catch(() => {});
+  }, []);
+
+  // silencioso=true: sincroniza en background sin mostrar spinner (post-crear/editar)
+  const cargar = useCallback((silencioso = false) => {
     const reqId = ++reqIdRef.current;
-    setCargando(true);
-    api.listar({ buscar: buscar || undefined, categoria: categoriaFiltro || undefined })
+    if (!silencioso) setCargando(true);
+    api.listar({
+      buscar:    buscar         || undefined,
+      categoria: categoriaFiltro || undefined,
+      orden:     ordenFiltro    || undefined,
+    })
       .then(r => {
-        // Solo actualiza si esta respuesta es la más reciente
         if (reqId === reqIdRef.current) setLista(r.data);
       })
       .catch(() => {
@@ -742,19 +766,12 @@ export default function Inventario() {
       .finally(() => {
         if (reqId === reqIdRef.current) setCargando(false);
       });
-  };
+  }, [buscar, categoriaFiltro, ordenFiltro]);
 
-  useEffect(() => {
-    api.categorias().then(r => {
-      const cats = r.data || [];
-      if (cats.length > 0) {
-        const merged = [...new Set([...CATEGORIAS_DEFAULT, ...cats])];
-        setCategorias(merged);
-      }
-    }).catch(() => {});
-  }, []);
+  useEffect(() => { refreshCategorias(); }, [refreshCategorias]);
 
-  useEffect(() => { cargar(); }, [buscar, categoriaFiltro]);
+  // [cargar] como dep es equivalente a [buscar, categoriaFiltro] pero con closure siempre fresco
+  useEffect(() => { cargar(); }, [cargar]);
 
   const abrirNuevo = () => { setForm(productoVacio); setModal('form'); };
   const abrirEditar = (p) => { setForm({ ...p, costo: p.costo || '' }); setProductoActual(p); setModal('form'); };
@@ -774,10 +791,32 @@ export default function Inventario() {
         stockMinimo: Number(form.stockMinimo || 5),
         imagenUrl: form.imagenUrl || null,
       };
-      if (!productoActual) { await api.crear(data); toast.success('Producto creado'); }
-      else { await api.actualizar(productoActual.id, data); toast.success('Producto actualizado'); }
-      cerrar(); cargar();
-    } catch (e) { toast.error('Error: ' + e.message); }
+      if (!productoActual) {
+        const { data: nuevo } = await api.crear(data);
+        const conMeta = { ...nuevo, stockBajo: nuevo.stock <= nuevo.stockMinimo };
+        // Insertar de inmediato respetando el orden activo
+        setLista(prev => {
+          const todos = [...prev, conMeta];
+          return ordenFiltro === 'recientes'
+            ? todos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            : todos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        });
+        cerrar();
+        toast.success('Producto creado');
+        cargar(true); // sincroniza filtros en background sin spinner
+      } else {
+        const { data: actualizado } = await api.actualizar(productoActual.id, data);
+        const conMeta = { ...actualizado, stockBajo: actualizado.stock <= actualizado.stockMinimo };
+        // Actualizar en sitio — sin recargar toda la lista
+        setLista(prev => prev.map(p => p.id === actualizado.id ? conMeta : p));
+        cerrar();
+        toast.success('Producto actualizado');
+        cargar(true);
+      }
+    } catch (e) {
+      const msg = e.response?.data?.error || e.message || 'Error desconocido';
+      toast.error('Error: ' + msg);
+    }
     finally { setGuardando(false); }
   };
 
@@ -787,14 +826,24 @@ export default function Inventario() {
       await api.ajustarStock(productoActual.id, { cantidad: Number(stockForm.cantidad), tipo: stockForm.tipo });
       toast.success('Stock actualizado');
       cerrar(); cargar();
-    } catch (e) { toast.error('Error: ' + e.message); }
+    } catch (e) {
+      const msg = e.response?.data?.error || e.message || 'Error desconocido';
+      toast.error('Error: ' + msg);
+    }
     finally { setGuardando(false); }
   };
 
   const eliminar = async (id) => {
     if (!await confirmar('Este producto será eliminado permanentemente del inventario.', '¿Eliminar producto?')) return;
-    try { await api.eliminar(id); toast.success('Producto eliminado'); cargar(); }
-    catch (e) { toast.error('Error al eliminar: ' + e.message); }
+    try {
+      await api.eliminar(id);
+      toast.success('Producto eliminado');
+      cargar();
+      refreshCategorias();
+    } catch (e) {
+      const msg = e.response?.data?.error || e.message || 'Error desconocido';
+      toast.error('Error al eliminar: ' + msg);
+    }
   };
 
   const MAX_SELECCION = 100;
@@ -833,7 +882,11 @@ export default function Inventario() {
       toast.success(`${n} producto${n > 1 ? 's' : ''} eliminado${n > 1 ? 's' : ''}`);
       setSeleccionados(new Set());
       cargar();
-    } catch (e) { toast.error('Error al eliminar: ' + e.message); }
+      refreshCategorias();
+    } catch (e) {
+      const msg = e.response?.data?.error || e.message || 'Error desconocido';
+      toast.error('Error al eliminar: ' + msg);
+    }
     finally { setEliminandoMasivo(false); }
   };
 
@@ -892,6 +945,17 @@ export default function Inventario() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Filter size={13} style={{ color: 'var(--color-gris-400)', flexShrink: 0 }} />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {/* Orden */}
+            <button
+              onClick={() => setOrdenFiltro(o => o === 'recientes' ? '' : 'recientes')}
+              className={ordenFiltro === 'recientes' ? 'filtro-tab filtro-tab-activo' : 'filtro-tab'}
+              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <Clock size={11} />
+              Recientes
+            </button>
+            <span style={{ color: 'var(--color-gris-300)', alignSelf: 'center' }}>|</span>
+            {/* Categorías */}
             <button
               onClick={() => setCategoriaFiltro('')}
               className={!categoriaFiltro ? 'filtro-tab filtro-tab-activo' : 'filtro-tab'}
@@ -1053,14 +1117,14 @@ export default function Inventario() {
 
       {/* Modal Stickers */}
       {modal === 'stickers' && (
-        <ModalStickers lista={lista} onClose={cerrar} />
+        <ModalStickers lista={lista} categorias={CATEGORIAS} onClose={cerrar} />
       )}
 
       {/* Modal Categorías */}
       {modal === 'categorias' && (
         <ModalCategorias
           onClose={cerrar}
-          onActualizado={cargar}
+          onActualizado={() => { cargar(); refreshCategorias(); }}
           onCrearCategoria={(nombre) => setCategorias(prev => [...new Set([...prev, nombre])])}
         />
       )}

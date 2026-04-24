@@ -21,15 +21,27 @@
   [redirects.headers]
     X-Proxy-Secret = "Tx9f2Kp7vQ4nB8wLj5mF"
 
-# Headers de seguridad para todas las páginas HTML
+# Headers de seguridad para todas las páginas
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "SAMEORIGIN"
+    # Bloquea iframes desde cualquier origen (clickjacking)
+    X-Frame-Options = "DENY"
+    # Impide que el navegador adivine el Content-Type
     X-Content-Type-Options = "nosniff"
+    # Controla qué información de referrer se envía
     Referrer-Policy = "strict-origin-when-cross-origin"
+    # Fuerza HTTPS por 1 año con preload
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Restringe acceso a APIs de hardware
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()"
+    # Evita ataques Spectre entre ventanas de distintos orígenes
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Protege recursos de este origen para no ser embebidos por otros dominios
+    Cross-Origin-Resource-Policy = "same-origin"
+    # CSP para el frontend SPA
+    # unsafe-inline necesario: Vite inyecta script inline para module preload + Tailwind usa inline styles
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
 
 # Headers para archivos PWA
 [[headers]]

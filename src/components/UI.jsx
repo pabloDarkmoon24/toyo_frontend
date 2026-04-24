@@ -65,7 +65,7 @@ export function EmptyState({ icon: Icon, title, description, action }) {
 }
 
 /* ---- BOTÓN ---- */
-export function Btn({ children, onClick, variant = 'primary', size = 'md', disabled, icon: Icon, type = 'button', className = '' }) {
+export function Btn({ children, onClick, variant = 'primary', size = 'md', disabled, icon: Icon, type = 'button', className = '', style }) {
   const v = {
     primary:   'btn btn-primario',
     secondary: 'btn btn-secundario',
@@ -76,7 +76,7 @@ export function Btn({ children, onClick, variant = 'primary', size = 'md', disab
   };
   const s = { sm: 'btn-sm', md: '', lg: 'btn-lg' };
   return (
-    <button type={type} onClick={onClick} disabled={disabled}
+    <button type={type} onClick={onClick} disabled={disabled} style={style}
       className={`${v[variant] || 'btn btn-primario'} ${s[size]} ${className}`}>
       {Icon && <Icon size={size === 'sm' ? 13 : 14} />}
       {children}
